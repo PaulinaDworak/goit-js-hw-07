@@ -1,35 +1,61 @@
 import { galleryItems } from "./gallery-items.js";
+
 const gallery = document.querySelector(".gallery");
 
-document.body.addEventListener("keypress", (e) => {
-    if (e.key === "Escape") basicLightbox.close();
+document.body.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        closeLightbox();
+    }
 });
 
-for (let item of galleryItems) {
-    const galleryItem = document.createElement("div");
-    galleryItem.classList.add("gallery__item");
-
-    const galleryLink = document.createElement("a");
-    galleryLink.classList.add("gallery__link");
-    galleryLink.href = item.original;
-
-    const galleryImage = document.createElement("img");
-    galleryImage.classList.add("gallery__image");
-    galleryImage.src = item.preview;
-    galleryImage.dataset.source = item.original;
-    galleryImage.alt = item.description;
-
-    galleryLink.appendChild(galleryImage);
-    galleryItem.appendChild(galleryLink);
-    gallery.appendChild(galleryItem);
+function closeLightbox() {
+    if (currentLightbox) {
+        currentLightbox.close();
+        currentLightbox = null;
+    }
 }
+
+let currentLightbox = null;
+
+gallery.innerHTML = galleryItems
+    .map(
+        (item) => `
+      <li class="gallery__item">
+        <a class="gallery__link" href="${item.original}">
+          <img class="gallery__image" src="${item.preview}" alt="${item.description}">
+        </a>
+      </li>
+    `
+    )
+    .join("");
 
 gallery.addEventListener("click", (event) => {
     event.preventDefault();
 
-    const lightbox = basicLightbox.create(`
-    <img src="${event.target.dataset.source}" width="800" height="600">
-  `);
+    if (event.target.nodeName === "IMG") {
+        const imageUrl = event.target.parentElement.href;
 
-    lightbox.show();
+        const lightbox = basicLightbox.create(
+            `
+      <div class="modal">
+        <img src="${imageUrl}" width="800" height="600">
+        <a class="close-btn">Close</a>
+      </div>
+    `,
+            {
+                onShow: (instance) => {
+                    instance.element().querySelector(".close-btn").onclick =
+                        () => {
+                            closeLightbox();
+                        };
+                },
+            }
+        );
+
+        closeLightbox();
+
+        lightbox.show();
+
+        currentLightbox = lightbox;
+    }
 });
